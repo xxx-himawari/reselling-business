@@ -85,7 +85,7 @@ describe("migrationと実PostgreSQL", () => {
     const r = await db.$queryRaw<
       Array<{ n: bigint }>
     >`SELECT count(*) AS n FROM "_prisma_migrations" WHERE finished_at IS NOT NULL`;
-    expect(Number(r[0].n)).toBe(1);
+    expect(Number(r[0].n)).toBe(2);
   });
   it("識別子は商品本体から分離し先頭0を保持", async () => {
     await createRecord(db, "identifiers", {
@@ -256,6 +256,14 @@ describe("migrationと実PostgreSQL", () => {
           chargeBasis: "PER_ORDER",
         },
       }),
+    ).rejects.toThrow();
+  });
+  it("DBがNUMERICのNaNも拒否", async () => {
+    await expect(
+      db.$executeRaw`UPDATE "Goal" SET "targetProfit" = 'NaN'::numeric WHERE "id" = ${goalId}::uuid`,
+    ).rejects.toThrow();
+    await expect(
+      db.$executeRaw`UPDATE "ProposalCost" SET "amount" = 'NaN'::numeric WHERE "proposalId" = ${proposalId}::uuid AND "state" = 'KNOWN'`,
     ).rejects.toThrow();
   });
   it("費用通貨と見積通貨が一致する", async () => {

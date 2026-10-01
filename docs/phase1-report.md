@@ -6,7 +6,7 @@
 
 - `package.json` / `package-lock.json`：Next.js 16.3.8、React、TypeScript、Prisma 6.19.3、Decimal、Zod、Vitest、実PostgreSQLテスト用ランタイム。依存を固定。
 - `prisma/schema.prisma`：指定の9モデルと列挙型。
-- `prisma/migrations/202610010001_foundation/migration.sql` / `migration_lock.toml`：PostgreSQLのテーブル、索引、FK、CHECK、数量・見積保護トリガー。
+- `prisma/migrations/202610010001_foundation/migration.sql` / `202610010002_finite_money/migration.sql` / `migration_lock.toml`：PostgreSQLのテーブル、索引、FK、CHECK、数量・見積保護トリガー。
 - `src/domain/money.ts` / `quantity.ts`：十進文字列、精度検証、通貨・税区分、整数数量、端数配賦、MOQ等の検証。
 - `src/application/inputs.ts` / `records.ts`：入力schema、登録・取得、数量別プラン、目標の版付き変更。
 - `src/infrastructure/db.ts` / `http.ts`：DB接続、ローカルアクセスと更新Originチェック、エラー応答。
@@ -33,7 +33,7 @@ Goalに目標利益、開始/終了、仕入予算、商品損失上限、同時
 
 - 初期migrationを空の実PostgreSQLへ適用し、再適用でpendingなしを確認。
 - 金額はNUMERIC(20,6)。APIは非負の十進文字列、整数最大14桁・小数最大6桁。Number入力や指数表記を拒否。計算用Decimalは50桁精度。
-- 金額・数量・予算の非負、同時テスト上限の正数、目標期間の順序、通貨・税区分。
+- NaN金額の拒否、金額・数量・予算の非負、同時テスト上限の正数、目標期間の順序、通貨・税区分。
 - 商品セット数は正数。識別子は文字列と桁数・数字形式、種類と値の重複防止。ASINは10桁英数字。照合確定は根拠必須。
 - CandidateとChannelProduct、CandidateとPlanとProposalは同じProduct。参照削除は禁止。
 - MOQ、発注単位の倍数、見積上下限、既知在庫をサービスとDBトリガーの両方で検証。
@@ -50,7 +50,7 @@ Goalに目標利益、開始/終了、仕入予算、商品損失上限、同時
 | `npm run typecheck` | PASS |
 | `npm test` | 29件 PASS |
 | `npm run build` | PASS、ページと登録/Goal更新APIの本番ビルド |
-| 実PostgreSQL統合テスト | 23件 PASS |
+| 実PostgreSQL統合テスト | 24件 PASS |
 | migration初回/再適用 | PASS |
 | 本番HTTP登録フロー | PASS、商品/識別子/チャネル/候補/仕入先/提案/複数量プラン/目標変更 |
 | HTTPの不正金額・数量・版競合・別Origin | PASS、400/422/409/403 |
