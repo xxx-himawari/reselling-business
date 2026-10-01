@@ -1,0 +1,1 @@
+schema_version,decision_id,product_id,candidate_id,supplier_proposal_id,sourcing_plan_id,decided_at,sales_channel,recommended_quantity,final_quantity,human_decision,override_reason,prediction_file,source_evidence,logic_version

@@ -1,0 +1,236 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum SalesChannel {
+  AMAZON_JP
+  EBAY
+}
+
+enum TaxBasis {
+  INCLUSIVE
+  EXCLUSIVE
+  UNKNOWN
+}
+
+enum IdentifierType {
+  JAN
+  EAN
+  UPC
+  GTIN
+}
+
+enum CandidateRoute {
+  SUPPLIER
+  MARKET
+}
+
+enum MatchStatus {
+  UNCONFIRMED
+  VERIFIED
+}
+
+enum Recommendation {
+  NEEDS_CONFIRMATION
+  TEST_NOW
+  BUY_OR_REPLENISH
+  WAIT_CONDITION
+  SKIP
+}
+
+enum CostState {
+  KNOWN
+  UNKNOWN
+  NOT_APPLICABLE
+}
+
+enum ChargeBasis {
+  PER_UNIT
+  PER_ORDER
+}
+
+enum CostType {
+  DOMESTIC_SHIPPING
+  INTERNATIONAL_SHIPPING
+  CUSTOMS
+  IMPORT_TAX
+  PAYMENT_FEE
+  FX_FEE
+  CUSTOMS_CLEARANCE
+  INSPECTION
+  OTHER
+}
+
+enum Confidence {
+  UNKNOWN
+  LOW
+  MEDIUM
+  HIGH
+}
+
+enum FulfillmentMethod {
+  FBA
+  FBM
+  MANUAL
+}
+
+model Product {
+  id           String              @id @default(uuid()) @db.Uuid
+  name         String
+  brand        String?
+  manufacturer String?
+  category     String?
+  variant      String?
+  packQuantity Int                 @default(1)
+  createdAt    DateTime            @default(now()) @db.Timestamptz(3)
+  identifiers  ProductIdentifier[]
+  channels     ChannelProduct[]
+  candidates   Candidate[]
+  proposals    SupplierProposal[]
+}
+
+model ProductIdentifier {
+  id         String         @id @default(uuid()) @db.Uuid
+  productId  String         @db.Uuid
+  type       IdentifierType
+  value      String
+  source     String
+  verifiedAt DateTime?      @db.Timestamptz(3)
+  product    Product        @relation(fields: [productId], references: [id], onDelete: Restrict)
+
+  @@unique([type, value])
+  @@index([productId])
+}
+
+model ChannelProduct {
+  id                String       @id @default(uuid()) @db.Uuid
+  productId         String       @db.Uuid
+  salesChannel      SalesChannel
+  marketplace       String
+  externalProductId String
+  condition         String       @default("NEW")
+  matchStatus       MatchStatus  @default(UNCONFIRMED)
+  matchEvidence     String?
+  createdAt         DateTime     @default(now()) @db.Timestamptz(3)
+  product           Product      @relation(fields: [productId], references: [id], onDelete: Restrict)
+  candidates        Candidate[]
+
+  @@unique([salesChannel, marketplace, externalProductId, condition])
+  @@unique([id, productId])
+  @@index([productId])
+}
+
+model Candidate {
+  id               String          @id @default(uuid()) @db.Uuid
+  productId        String          @db.Uuid
+  channelProductId String?         @db.Uuid
+  route            CandidateRoute
+  active           Boolean         @default(true)
+  recommendation   Recommendation  @default(NEEDS_CONFIRMATION)
+  nextAction       String
+  nextActionDueAt  DateTime?       @db.Timestamptz(3)
+  createdAt        DateTime        @default(now()) @db.Timestamptz(3)
+  product          Product         @relation(fields: [productId], references: [id], onDelete: Restrict)
+  channelProduct   ChannelProduct? @relation(fields: [channelProductId, productId], references: [id, productId], onDelete: Restrict, onUpdate: Restrict)
+  plans            SourcingPlan[]
+
+  @@unique([id, productId])
+  @@index([productId])
+}
+
+model Supplier {
+  id        String             @id @default(uuid()) @db.Uuid
+  name      String
+  type      String             @default("MANUAL")
+  country   String             @default("JP")
+  url       String?
+  notes     String?
+  createdAt DateTime           @default(now()) @db.Timestamptz(3)
+  proposals SupplierProposal[]
+}
+
+model SupplierProposal {
+  id                  String         @id @default(uuid()) @db.Uuid
+  supplierId          String         @db.Uuid
+  productId           String         @db.Uuid
+  supplierProductCode String?
+  unitCost            Decimal        @db.Decimal(20, 6)
+  currency            String         @default("JPY") @db.VarChar(3)
+  taxBasis            TaxBasis       @default(UNKNOWN)
+  moq                 Int            @default(1)
+  orderMultiple       Int            @default(1)
+  quantityMin         Int            @default(1)
+  quantityMax         Int?
+  stock               Int?
+  leadTimeDays        Int?
+  returnTerms         String?
+  defectTerms         String?
+  directShipAllowed   Boolean?
+  source              String
+  confidence          Confidence     @default(UNKNOWN)
+  fetchedAt           DateTime       @db.Timestamptz(3)
+  observedAt          DateTime       @db.Timestamptz(3)
+  validUntil          DateTime?      @db.Timestamptz(3)
+  createdAt           DateTime       @default(now()) @db.Timestamptz(3)
+  supplier            Supplier       @relation(fields: [supplierId], references: [id], onDelete: Restrict)
+  product             Product        @relation(fields: [productId], references: [id], onDelete: Restrict)
+  costs               ProposalCost[]
+  plans               SourcingPlan[]
+
+  @@unique([id, productId])
+  @@unique([id, currency])
+  @@index([productId, supplierId])
+}
+
+model ProposalCost {
+  id          String           @id @default(uuid()) @db.Uuid
+  proposalId  String           @db.Uuid
+  type        CostType
+  amount      Decimal?         @db.Decimal(20, 6)
+  currency    String           @db.VarChar(3)
+  taxBasis    TaxBasis         @default(UNKNOWN)
+  state       CostState
+  chargeBasis ChargeBasis
+  source      String?
+  proposal    SupplierProposal @relation(fields: [proposalId, currency], references: [id, currency], onDelete: Restrict, onUpdate: Restrict)
+
+  @@unique([proposalId, type])
+}
+
+model SourcingPlan {
+  id                 String            @id @default(uuid()) @db.Uuid
+  productId          String            @db.Uuid
+  candidateId        String            @db.Uuid
+  supplierProposalId String            @db.Uuid
+  quantity           Int
+  fulfillmentMethod  FulfillmentMethod
+  targetSaleStart    DateTime?         @db.Timestamptz(3)
+  createdAt          DateTime          @default(now()) @db.Timestamptz(3)
+  candidate          Candidate         @relation(fields: [candidateId, productId], references: [id, productId], onDelete: Restrict, onUpdate: Restrict)
+  proposal           SupplierProposal  @relation(fields: [supplierProposalId, productId], references: [id, productId], onDelete: Restrict, onUpdate: Restrict)
+
+  @@unique([candidateId, supplierProposalId, quantity, fulfillmentMethod])
+  @@index([supplierProposalId])
+}
+
+model Goal {
+  id                 String   @id @default(uuid()) @db.Uuid
+  name               String
+  targetProfit       Decimal  @db.Decimal(20, 6)
+  currency           String   @default("JPY") @db.VarChar(3)
+  periodStart        DateTime @db.Timestamptz(3)
+  periodEndExclusive DateTime @db.Timestamptz(3)
+  timezone           String   @default("Asia/Tokyo")
+  profitBasis        String   @default("BUSINESS_PROFIT")
+  sourcingBudget     Decimal  @db.Decimal(20, 6)
+  maxLossPerProduct  Decimal  @db.Decimal(20, 6)
+  maxConcurrentTests Int
+  version            Int      @default(1)
+  createdAt          DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt          DateTime @updatedAt @db.Timestamptz(3)
+}

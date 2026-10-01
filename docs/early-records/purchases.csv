@@ -1,0 +1,1 @@
+schema_version,purchase_record_id,decision_id,product_id,supplier_id,sourcing_plan_id,ordered_quantity,received_quantity,defect_quantity,actual_unit_cost,actual_shipping_total,actual_other_cost_total,currency,tax_basis,ordered_at,received_at,source_reference,notes

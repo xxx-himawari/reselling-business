@@ -1,0 +1,44 @@
+{
+  "name": "reselling-business",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev --hostname 127.0.0.1",
+    "build": "next build --webpack",
+    "start": "next start --hostname 127.0.0.1",
+    "db:generate": "prisma generate",
+    "db:migrate": "prisma migrate deploy",
+    "db:dev": "prisma migrate dev",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run tests/unit",
+    "test:db": "tsx scripts/test-db.ts",
+    "postinstall": "prisma generate",
+    "db:local": "tsx scripts/db-local.ts"
+  },
+  "dependencies": {
+    "@prisma/client": "6.19.3",
+    "decimal.js": "10.6.0",
+    "next": "16.3.8",
+    "react": "19.2.0",
+    "react-dom": "19.2.0",
+    "zod": "4.3.6"
+  },
+  "devDependencies": {
+    "@types/node": "22.19.15",
+    "@types/react": "19.2.14",
+    "@types/react-dom": "19.2.3",
+    "embedded-postgres": "18.4.0-beta.17",
+    "prettier": "3.9.9",
+    "prisma": "6.19.3",
+    "tsx": "4.21.0",
+    "typescript": "5.9.3",
+    "vitest": "4.1.11"
+  },
+  "engines": {
+    "node": ">=20.19"
+  },
+  "overrides": {
+    "deepmerge-ts": "8.0.0",
+    "esbuild": "0.28.1"
+  }
+}

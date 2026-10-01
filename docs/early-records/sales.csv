@@ -1,0 +1,1 @@
+schema_version,sale_record_id,purchase_record_id,product_id,sales_channel,external_transaction_id,event_type,quantity,unit_sale_price,marketplace_fee_total,fulfillment_fee_total,shipping_cost_total,ad_cost_total,return_loss_total,other_cost_total,currency,original_currency,original_amount,fx_rate,fx_source,fx_at,sold_at,fee_status,source_reference,notes
